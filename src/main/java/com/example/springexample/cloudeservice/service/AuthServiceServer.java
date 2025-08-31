@@ -32,6 +32,7 @@ public class AuthServiceServer extends AuthServiceGrpc.AuthServiceImplBase {
         Users users = usersService.findByLogin(rl.getLogin());
         if (users == null) {
             streamObserver.onError(Status.NOT_FOUND.withDescription("User not found").asRuntimeException());
+
         }
         else {
             LoginResponse loginResponse = LoginResponse.newBuilder().setToken(rl.getLogin() + rl.getPassword()).build();
