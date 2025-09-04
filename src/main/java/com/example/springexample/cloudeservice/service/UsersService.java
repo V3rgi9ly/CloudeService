@@ -12,7 +12,7 @@ public class UsersService {
     private final UsersRepository usersRepository;
 
     public void save(Users user) {
-        if (usersRepository.findByLogin(user.getLogin()) != null) {
+        if (usersRepository.findByUsername(user.getUsername()) != null) {
             throw new IllegalArgumentException("Login already exists");
         }
         else {
@@ -20,11 +20,11 @@ public class UsersService {
         }
     }
 
-    public Users findByLogin(String login) {
-
-        if (usersRepository.findByLogin(login) == null) {
-            throw new IllegalArgumentException("Login not found");
-        }
-        return usersRepository.findByLogin(login);
-    }
+//    public Users findByLogin(String login) {
+//
+//        if (usersRepository.findByLogin(login) == null) {
+//            throw new IllegalArgumentException("Login not found");
+//        }
+//        return usersRepository.findByLogin(login);
+//    }
 }

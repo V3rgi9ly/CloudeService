@@ -13,10 +13,25 @@ spring:
     show-sql: true
     hibernate:
       ddl-auto: none
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+
+  session:
+    redis:
+      flush-mode: on_save
+
 
 server:
   port: 8084
 
+grpc:
+  server:
+    port: 9090
+
 logging:
   level:
+    com.example: DEBUG
     liquibase: DEBUG
+    root: info
