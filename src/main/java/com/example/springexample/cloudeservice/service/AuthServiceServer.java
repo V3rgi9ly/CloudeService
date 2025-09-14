@@ -21,7 +21,6 @@ public class AuthServiceServer extends AuthServiceGrpc.AuthServiceImplBase {
     @Override
     public void getRegistre(RequestRegistre req, StreamObserver<RegisterResponse> streamObserver) {
         Users users = new Users();
-
         users.setPassword(req.getPassword());
         users.setUsername(req.getLogin());
         usersService.save(users);
@@ -31,19 +30,5 @@ public class AuthServiceServer extends AuthServiceGrpc.AuthServiceImplBase {
 
     }
 
-//    @Override
-//    public void getLogin(RequestLogin rl, StreamObserver<LoginResponse> streamObserver) {
-//        Users users = usersService.findByLogin(rl.getLogin());
-//        if (users == null) {
-//            streamObserver.onError(Status.NOT_FOUND.withDescription("User not found").asRuntimeException());
-//
-//        }
-//        else {
-//            LoginResponse loginResponse = LoginResponse.newBuilder().setToken(rl.getLogin() + rl.getPassword()).build();
-//            streamObserver.onNext(loginResponse);
-//            streamObserver.onCompleted();
-//        }
-//
-//    }
 }
 
