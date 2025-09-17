@@ -66,9 +66,7 @@ class CloudeServiceApplicationTests {
     void signUpTest() {
         UsersSignUpDto user = new UsersSignUpDto("Pridok", "Pozalak");
         UsersDTO usersDTO = authService.signUp(user);
-
         Users users = usersRepository.findByUsername(user.username());
-
         assertEquals(users.getUsername(), usersDTO.username());
     }
 
@@ -78,7 +76,6 @@ class CloudeServiceApplicationTests {
     void usernameIsTakerTest() {
         UsersSignUpDto user = new UsersSignUpDto("Provodka", "Tidaun");
         UsersDTO usersDTO = authService.signUp(user);
-
         UsersSignUpDto user_two = new UsersSignUpDto("Provodka", "Tidaun");
         assertThrows(UserAlreadyExistsException.class, () -> {
             authService.signUp(user_two);
@@ -90,9 +87,7 @@ class CloudeServiceApplicationTests {
     void signInTest() {
         UsersSignUpDto user = new UsersSignUpDto("Provodka", "Tidaun");
         UsersDTO usersDTO = authService.signUp(user);
-
         UsersDTO usersDTO1 = authService.validateUser(user);
-
         assertEquals(usersDTO1.username(), usersDTO.username());
     }
 
