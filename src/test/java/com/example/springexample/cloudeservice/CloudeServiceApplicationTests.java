@@ -92,7 +92,6 @@ class CloudeServiceApplicationTests {
         UsersSignUpDto user = new UsersSignUpDto("Provodka", "Tidaun");
         UsersDTO usersDTO = authService.signUp(user);
 
-
         UsersDTO usersDTO1 = authService.validateUser(user);
 
         assertEquals(usersDTO1.username(), usersDTO.username());
