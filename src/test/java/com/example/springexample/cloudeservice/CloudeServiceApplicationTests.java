@@ -85,7 +85,6 @@ class CloudeServiceApplicationTests {
         });
     }
 
-
     @Test
     @DisplayName("sign in Test")
     void signInTest() {
