@@ -11,8 +11,6 @@ import org.mapstruct.MappingConstants;
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface GetMapping {
 
-
-
     Users toUsers(UsersSignUpDto usersSignUpDto);
     UsersDTO toUsersDto(Users users);
 
