@@ -8,6 +8,9 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -16,20 +19,57 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 public class SecurityConfig {
 
-
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(authorizeRequests -> authorizeRequests
-                        .requestMatchers("/**").permitAll()
-                        .anyRequest().authenticated())
+                .authorizeHttpRequests(authorize -> authorize
+                        // React статические файлы
+                        .requestMatchers("/","config.js", "index-BdL5i7zc.css", "index-BoXi_CZW.js", "icon-BA2QZDzm.png", "/index.html", "/static/**", "/css/**", "/js/**", "/images/**", "/favicon.ico", "/assets/**").permitAll()
+
+                        // React client-side роуты
+                        .requestMatchers("/login", "/register", "/dashboard").permitAll()
+
+                        // Открытые API
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/public/**").permitAll()
+
+                        // Защищённые API
+                        .requestMatchers("/api/user/me").authenticated()
+
+                        // Всё остальное
+                        .anyRequest().authenticated()
+                )
+                .formLogin(AbstractHttpConfigurer::disable) // если делаешь логин через REST
                 .logout(logout -> logout
                         .logoutUrl("/api/auth/sign-out")
-                        .deleteCookies("SESSION")
+                        .deleteCookies("SESSION") // у тебя Redis session → кука называется "SESSION"
                         .invalidateHttpSession(true)
-                        .clearAuthentication(true));
-
+                        .clearAuthentication(true)
+                );
         return http.build();
     }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+
+//    @Bean
+//    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+//        http
+//                .csrf(AbstractHttpConfigurer::disable)
+//                .authorizeHttpRequests(authorizeRequests -> authorizeRequests
+//                        .requestMatchers("/**").permitAll()
+////                        .requestMatchers("/api/public/**").permitAll()
+//                        .anyRequest().authenticated())
+//                .logout(logout -> logout
+//                        .logoutUrl("/api/auth/sign-out")
+//                        .deleteCookies("SESSION")
+//                        .invalidateHttpSession(true)
+//                        .clearAuthentication(true));
+//
+//        return http.build();
+//    }
 }

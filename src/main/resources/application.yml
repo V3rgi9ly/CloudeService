@@ -1,4 +1,6 @@
 spring:
+
+
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yml
     enabled: true
@@ -13,15 +15,17 @@ spring:
     show-sql: true
     hibernate:
       ddl-auto: none
-  data:
-    redis:
-      host: 127.0.0.1
-      port: 6379
-      password:
+  #  data:
+  #    redis:
+  #      host: 127.0.0.1
+  #      port: 6379
+  #      password:
 
   session:
     redis:
       flush-mode: on_save
+
+
 
 
 server:
@@ -36,3 +40,9 @@ logging:
     com.example: DEBUG
     liquibase: DEBUG
     root: info
+
+minio:
+  server:
+    url: http://localhost:9000
+    access-key: minioadmin
+    secret-key: minioadmin

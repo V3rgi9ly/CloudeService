@@ -24,16 +24,13 @@ public class ControllerAuth {
 
     private final AuthService authService;
 
-
     @PostMapping("/sign-in")
     public ResponseEntity<?> login(@RequestBody UsersSignUpDto usersSignUp, HttpServletRequest request) {
-        request.getSession(true);
         return ResponseEntity.ok(authService.validateUser(usersSignUp));
     }
 
     @PostMapping("/sign-up")
     public ResponseEntity<?> signUp(@RequestBody UsersSignUpDto usersSignUp, HttpServletRequest request) {
-        request.getSession(true);
         return ResponseEntity.ok(authService.signUp(usersSignUp));
     }
 

@@ -9,6 +9,19 @@ import org.springframework.web.bind.annotation.RestController;
 @Controller
 public class controllerMainPage {
 
+
+//    @GetMapping(value = {
+//            "/",
+//            "/login",
+//            "/register",
+//            "/dashboard",
+//            "/profile",
+//            "/{path:[^\\.]*}"  // Любой путь без точки (не статический файл)
+//    })
+//    public String forwardToReact() {
+//        return "forward:/index.html"; // React index.html
+//    }
+
     @RequestMapping(value = {"/{path:[^\\.]*}", "/api/"})
     public String forward() {
         return "forward:/index.html";

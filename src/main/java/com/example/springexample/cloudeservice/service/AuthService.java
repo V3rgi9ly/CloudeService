@@ -11,6 +11,7 @@ import com.example.springexample.cloudeservice.model.Users;
 import com.example.springexample.cloudeservice.repository.UsersRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataAccessException;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
@@ -41,6 +42,17 @@ public class AuthService {
 
         if (users!=null){
             UsersDTO usersDTO=getMapping.toUsersDto(users);
+            return  usersDTO;
+        }
+        else {
+            throw new NoUserException("There is no user with this username");
+        }
+    }
+
+    public UsersDTO getCurrenciesUser(UsersDTO usersDTO){
+        Users users = usersRepository.findByUsername(usersDTO.username());
+
+        if (users!=null){
             return  usersDTO;
         }
         else {
