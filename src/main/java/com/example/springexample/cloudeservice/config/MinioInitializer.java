@@ -3,8 +3,9 @@ package com.example.springexample.cloudeservice.config;
 import com.example.springexample.cloudeservice.service.MinioService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.stereotype.Component;
 
-
+@Component
 @RequiredArgsConstructor
 public class MinioInitializer implements CommandLineRunner {
 
@@ -12,6 +13,7 @@ public class MinioInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        minioService.createBcuket("user-files");
+        minioService.createBucket();
+        System.out.println("Бакет создан");
     }
 }

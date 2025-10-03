@@ -7,6 +7,7 @@ import lombok.Setter;
 import org.hibernate.query.sql.internal.ParameterRecognizerImpl;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -17,9 +18,10 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "minio.server")
 public class MiniConfig {
 
-    private String url="http://localhost:9000";
-    private String accesskey="minioadmin";
-    private String secretkey="minioadmin";
+    private String url;
+    private String accesskey;
+    private String secretkey;
+    private String bucket;
 
     @Bean
     public MinioClient minioClient(){

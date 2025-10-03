@@ -1,39 +1,115 @@
 package com.example.springexample.cloudeservice.service;
 
-
-import io.minio.BucketExistsArgs;
-import io.minio.MakeBucketArgs;
-import io.minio.MinioClient;
+import com.example.springexample.cloudeservice.config.MiniConfig;
+import com.example.springexample.cloudeservice.dto.MinIODTO;
+import com.example.springexample.cloudeservice.model.Users;
+import com.example.springexample.cloudeservice.repository.UsersRepository;
+import io.minio.*;
 import io.minio.errors.MinioException;
+import io.minio.messages.Item;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayInputStream;
+import java.util.ArrayList;
+import java.util.List;
+
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class MinioService {
 
+    private final MiniConfig miniConfig;
     private final MinioClient minioClient;
+    private final UsersRepository usersRepository;
 
-    public MinioService(MinioClient minioClient) {
-        this.minioClient = minioClient;
+    public void createUserDirectory(String bucketName) {
+
+        String objectName = "user-" + bucketName + "files" + "/";
+        try {
+            minioClient.putObject(PutObjectArgs.builder()
+                    .bucket(miniConfig.getBucket())
+                    .object(objectName)
+                    .stream(new ByteArrayInputStream(new byte[]{}), 0, -1)
+                    .build());
+
+            log.info("Директория челика" + bucketName + "создана");
+        } catch (MinioException e) {
+            log.error("Ошибка MinIO: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Ошибка: " + e.getMessage());
+        }
+
     }
 
-    public void createBcuket(String bucketName) {
+    public void createBucket() {
         try {
-            boolean found = minioClient.bucketExists(
-                    BucketExistsArgs.builder().bucket(bucketName).build()
-            );
+            boolean found = minioClient.bucketExists(BucketExistsArgs.builder().bucket("user-files").build());
 
             if (!found) {
-                minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
-
-                System.out.println("✅ Bucket '" + bucketName + "' создан.");
+                minioClient.makeBucket(MakeBucketArgs.builder().bucket(miniConfig.getBucket()).build());
             } else {
-                System.out.println("ℹ️ Bucket '" + bucketName + "' уже существует.");
+                log.info("Bucket 'user-files' already exists.");
             }
         } catch (MinioException e) {
-            System.err.println("Ошибка MinIO: " + e.getMessage());
+            log.error("Error occurred: " + e);
+            log.error("HTTP trace: " + e.httpTrace());
         } catch (Exception e) {
-            System.err.println("Ошибка: " + e.getMessage());
-
+            log.error("Ошибка: " + e.getMessage());
         }
+    }
+
+    public List<MinIODTO> getDirectory(String path) {
+        List<MinIODTO> minIODTOList=new ArrayList<>();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        Users user = usersRepository.findByUsername(username);
+        if (user == null) {
+            throw new RuntimeException("Пользователь не найден: " + username);
+        }
+        String userid = String.valueOf(user.getId());
+
+        Iterable<Result<Item>> results = minioClient.listObjects(
+                ListObjectsArgs.builder()
+                        .bucket(miniConfig.getBucket())
+                        .prefix(userid + "/")
+                        .delimiter("/")
+                        .build()
+        );
+
+
+
+        for (Result<Item> s : results) {
+            minIODTOList.add(new MinIODTO(s.get().userTags()))
+        }
+
+    }
+
+    public MinIODTO createFolder(String folderName) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        String userid = String.valueOf(usersRepository.findByUsername(username));
+        String folderPath = "user-" + userid + "files" + "/" + folderName;
+        try {
+            minioClient.putObject(
+                    PutObjectArgs.builder()
+                            .bucket(miniConfig.getBucket())
+                            .object(folderPath)
+                            .stream(new ByteArrayInputStream(new byte[0]), 0, -1)
+                            .build()
+            );
+            log.info("Папка создана: " + folderPath);
+            MinIODTO minIODTO=new MinIODTO(folderPath,folderName,"DIRECTORY");
+            return minIODTO;
+        } catch (MinioException e) {
+            log.error("Ошибка MinIO: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Ошибка: " + e.getMessage());
+        }
+
+        return null;
     }
 }

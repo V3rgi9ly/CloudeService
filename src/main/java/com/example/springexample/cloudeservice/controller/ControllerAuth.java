@@ -1,31 +1,24 @@
 package com.example.springexample.cloudeservice.controller;
 
-import com.example.springexample.cloudeservice.AuthServiceGrpc;
-import com.example.springexample.cloudeservice.RequestRegistre;
-import com.example.springexample.cloudeservice.dto.UsersDTO;
 import com.example.springexample.cloudeservice.dto.UsersSignUpDto;
-import com.example.springexample.cloudeservice.model.Users;
 import com.example.springexample.cloudeservice.service.AuthService;
-import com.example.springexample.cloudeservice.service.AuthServiceServer;
+import com.example.springexample.cloudeservice.service.MinioService;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-
-import javax.swing.plaf.PanelUI;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/auth")
 public class ControllerAuth {
 
+
+    private final MinioService minioService;
     private final AuthService authService;
 
     @PostMapping("/sign-in")
-    public ResponseEntity<?> login(@RequestBody UsersSignUpDto usersSignUp, HttpServletRequest request) {
+    public ResponseEntity<?> signIn(@RequestBody UsersSignUpDto usersSignUp, HttpServletRequest request) {
         return ResponseEntity.ok(authService.validateUser(usersSignUp));
     }
 

@@ -11,7 +11,6 @@ import com.example.springexample.cloudeservice.model.Users;
 import com.example.springexample.cloudeservice.repository.UsersRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataAccessException;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
@@ -19,6 +18,7 @@ import org.springframework.stereotype.Service;
 public class AuthService {
     private final UsersRepository usersRepository;
     private final GetMapping getMapping;
+    private final MinioService minioService;
 
     public UsersDTO signUp(UsersSignUpDto user) {
         Users users = usersRepository.findByUsername(user.username());
@@ -28,6 +28,7 @@ public class AuthService {
         try {
             users = getMapping.toUsers(user);
             usersRepository.save(users);
+            minioService.createUserDirectory(String.valueOf(users.getId()));
         }
         catch (DataAccessException e){
             throw new DatabaseConnectionException("Not Connection");

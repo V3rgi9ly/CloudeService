@@ -25,16 +25,18 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize
                         // React статические файлы
-                        .requestMatchers("/","config.js", "index-BdL5i7zc.css", "index-BoXi_CZW.js", "icon-BA2QZDzm.png", "/index.html", "/static/**", "/css/**", "/js/**", "/images/**", "/favicon.ico", "/assets/**").permitAll()
+                        .requestMatchers("/","config.js", "index-BoXi_CZW.js:267", "index-BdL5i7zc.css", "index-BoXi_CZW.js", "icon-BA2QZDzm.png", "/index.html", "/static/**", "/css/**", "/js/**", "/images/**", "/favicon.ico", "/assets/**").permitAll()
 
                         // React client-side роуты
                         .requestMatchers("/login", "/register", "/dashboard").permitAll()
 
                         // Открытые API
-                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/auth/**", "/api/directory/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
 
                         // Защищённые API
+//                        .requestMatchers().authenticated()
+//                        .requestMatchers("/api/directory").authenticated()
                         .requestMatchers("/api/user/me").authenticated()
 
                         // Всё остальное
