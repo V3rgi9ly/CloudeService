@@ -19,12 +19,4 @@ public class UsersService {
             usersRepository.save(user);
         }
     }
-
-//    public Users findByLogin(String login) {
-//
-//        if (usersRepository.findByLogin(login) == null) {
-//            throw new IllegalArgumentException("Login not found");
-//        }
-//        return usersRepository.findByLogin(login);
-//    }
 }

@@ -13,6 +13,13 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 
 @Configuration
@@ -24,32 +31,31 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize
-                        // React статические файлы
-                        .requestMatchers("/","config.js", "index-BoXi_CZW.js:267", "index-BdL5i7zc.css", "index-BoXi_CZW.js", "icon-BA2QZDzm.png", "/index.html", "/static/**", "/css/**", "/js/**", "/images/**", "/favicon.ico", "/assets/**").permitAll()
 
-                        // React client-side роуты
+                        .requestMatchers("/", "config.js", "index-BoXi_CZW.js:267", "index-BdL5i7zc.css", "index-BoXi_CZW.js", "icon-BA2QZDzm.png", "/index.html", "/static/**", "/css/**", "/js/**", "/images/**", "/favicon.ico", "/assets/**").permitAll()
                         .requestMatchers("/login", "/register", "/dashboard").permitAll()
-
-                        // Открытые API
-                        .requestMatchers("/api/auth/**", "/api/directory/**").permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
+                        .requestMatchers("/api/user/**", "/api/directory/**").authenticated()
 
-                        // Защищённые API
-//                        .requestMatchers().authenticated()
-//                        .requestMatchers("/api/directory").authenticated()
-                        .requestMatchers("/api/user/me").authenticated()
 
-                        // Всё остальное
                         .anyRequest().authenticated()
                 )
-                .formLogin(AbstractHttpConfigurer::disable) // если делаешь логин через REST
+                .securityContext((securityContext) -> securityContext.securityContextRepository(securityContextRepository()))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.ALWAYS))
+                .formLogin(AbstractHttpConfigurer::disable)
                 .logout(logout -> logout
                         .logoutUrl("/api/auth/sign-out")
-                        .deleteCookies("SESSION") // у тебя Redis session → кука называется "SESSION"
+                        .deleteCookies("SESSION")
                         .invalidateHttpSession(true)
                         .clearAuthentication(true)
                 );
         return http.build();
+    }
+
+    @Bean
+    public SecurityContextRepository securityContextRepository() {
+        return new HttpSessionSecurityContextRepository();
     }
 
     @Bean
@@ -58,20 +64,4 @@ public class SecurityConfig {
     }
 
 
-//    @Bean
-//    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-//        http
-//                .csrf(AbstractHttpConfigurer::disable)
-//                .authorizeHttpRequests(authorizeRequests -> authorizeRequests
-//                        .requestMatchers("/**").permitAll()
-////                        .requestMatchers("/api/public/**").permitAll()
-//                        .anyRequest().authenticated())
-//                .logout(logout -> logout
-//                        .logoutUrl("/api/auth/sign-out")
-//                        .deleteCookies("SESSION")
-//                        .invalidateHttpSession(true)
-//                        .clearAuthentication(true));
-//
-//        return http.build();
-//    }
 }

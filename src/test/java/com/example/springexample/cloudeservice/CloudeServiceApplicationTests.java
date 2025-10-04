@@ -2,7 +2,6 @@ package com.example.springexample.cloudeservice;
 
 import com.example.springexample.cloudeservice.dto.UsersDTO;
 import com.example.springexample.cloudeservice.dto.UsersSignUpDto;
-import com.example.springexample.cloudeservice.exception.exceptionClass.DatabaseConnectionException;
 import com.example.springexample.cloudeservice.exception.exceptionClass.NoUserException;
 import com.example.springexample.cloudeservice.exception.exceptionClass.UserAlreadyExistsException;
 import com.example.springexample.cloudeservice.model.Users;
@@ -80,7 +79,7 @@ class CloudeServiceApplicationTests {
     void signInTest() {
         UsersSignUpDto user = new UsersSignUpDto("Provodka", "Tidaun");
         UsersDTO usersDTO = authService.signUp(user);
-        UsersDTO usersDTO1 = authService.validateUser(user);
+        UsersDTO usersDTO1 = authService.autentifiactionUser(user);
         assertEquals(usersDTO1.username(), usersDTO.username());
     }
 
@@ -89,7 +88,7 @@ class CloudeServiceApplicationTests {
     void noUserWithThisUsernameTest() {
         UsersSignUpDto user = new UsersSignUpDto("Provodka", "Tidaun");
 
-        assertThrows(NoUserException.class, ()->{authService.validateUser(user);});
+        assertThrows(NoUserException.class, ()->{authService.autentifiactionUser(user);});
 
     }
 }

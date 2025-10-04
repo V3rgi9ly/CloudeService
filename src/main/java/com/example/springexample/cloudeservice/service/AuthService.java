@@ -29,8 +29,7 @@ public class AuthService {
             users = getMapping.toUsers(user);
             usersRepository.save(users);
             minioService.createUserDirectory(String.valueOf(users.getId()));
-        }
-        catch (DataAccessException e){
+        } catch (DataAccessException e) {
             throw new DatabaseConnectionException("Not Connection");
         }
 
@@ -38,25 +37,22 @@ public class AuthService {
     }
 
 
-    public UsersDTO validateUser(UsersSignUpDto usersSignUpDto) {
+    public UsersDTO autentifiactionUser(UsersSignUpDto usersSignUpDto) {
         Users users = usersRepository.findByUsername(usersSignUpDto.username());
 
-        if (users!=null){
-            UsersDTO usersDTO=getMapping.toUsersDto(users);
-            return  usersDTO;
-        }
-        else {
+        if (users == null) {
             throw new NoUserException("There is no user with this username");
         }
+
+        return getMapping.toUsersDto(users);
     }
 
-    public UsersDTO getCurrenciesUser(UsersDTO usersDTO){
+    public UsersDTO getCurrenciesUser(UsersDTO usersDTO) {
         Users users = usersRepository.findByUsername(usersDTO.username());
 
-        if (users!=null){
-            return  usersDTO;
-        }
-        else {
+        if (users != null) {
+            return usersDTO;
+        } else {
             throw new NoUserException("There is no user with this username");
         }
     }
