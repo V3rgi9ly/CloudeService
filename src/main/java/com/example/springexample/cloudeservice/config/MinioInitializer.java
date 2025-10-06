@@ -16,6 +16,6 @@ public class MinioInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         minioService.createBucket();
-        log.info("Бакет создан");
+        log.info("Bucket create");
     }
 }

@@ -27,14 +27,11 @@ public class ControllerAuth {
     private final CustomUserDetailsService customUserDetailsService;
 
     @PostMapping("/sign-in")
-    public ResponseEntity<?> signIn(@RequestBody UsersSignUpDto usersSignUp, HttpServletRequest request) {
+    public ResponseEntity<?> signIn(@RequestBody UsersSignUpDto usersSignIn, HttpServletRequest request) {
 
-        var user = authService.autentifiactionUser(usersSignUp); // проверка логина и пароля
-        if (user == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Неверные данные");
-        }
+        var user = authService.autentifiactionUser(usersSignIn);
 
-        UserDetails userDetails = customUserDetailsService.loadUserByUsername(usersSignUp.username());
+        UserDetails userDetails = customUserDetailsService.loadUserByUsername(usersSignIn.username());
         UsernamePasswordAuthenticationToken authToken =
                 new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 
@@ -43,15 +40,29 @@ public class ControllerAuth {
         request.getSession().setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
                 SecurityContextHolder.getContext());
 
-        return ResponseEntity.ok(Map.of(
-                "username", user.username()
-        ));
+        return ResponseEntity.ok(user);
     }
 
     @PostMapping("/sign-up")
     public ResponseEntity<?> signUp(@RequestBody UsersSignUpDto usersSignUp, HttpServletRequest request) {
-        request.getSession(true);
-        return ResponseEntity.ok(authService.signUp(usersSignUp));
+        var user=authService.signUp(usersSignUp);
+
+        UserDetails userDetails = org.springframework.security.core.userdetails.User
+                .withUsername(user.username())
+                .password(usersSignUp.password()) // можно временно взять из DTO
+                .roles("USER")
+                .build();
+
+        UsernamePasswordAuthenticationToken authToken =
+                new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+
+        SecurityContextHolder.getContext().setAuthentication(authToken);
+        request.getSession().setAttribute(
+                HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+                SecurityContextHolder.getContext()
+        );
+
+        return ResponseEntity.ok(user);
     }
 
 

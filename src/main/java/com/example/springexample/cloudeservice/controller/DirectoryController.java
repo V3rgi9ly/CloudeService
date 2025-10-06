@@ -23,15 +23,12 @@ public class DirectoryController {
 
     @GetMapping
     public ResponseEntity<?> getDirectory(@AuthenticationPrincipal UserDetails userDetails, @RequestParam String path) {
-//        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-//        boolean isAuthenticated = auth != null && auth.isAuthenticated()
-//                && !(auth instanceof AnonymousAuthenticationToken);
         return ResponseEntity.ok(minioService.getDirectory(path, userDetails.getUsername()));
     }
 
     @PostMapping()
-    public ResponseEntity<?> createDirectory(@RequestParam String path) {
+    public ResponseEntity<?> createDirectory(@AuthenticationPrincipal UserDetails userDetails, @RequestParam String path) {
         log.info(path);
-        return ResponseEntity.ok(minioService.createFolder(path));
+        return ResponseEntity.ok(minioService.createFolder(path, userDetails.getUsername()));
     }
 }

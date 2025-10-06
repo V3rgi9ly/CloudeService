@@ -12,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import redis.clients.jedis.resps.StreamGroupInfo;
 
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
@@ -66,15 +68,16 @@ public class MinioService {
         List<MinIODTO> minIODTOList = new ArrayList<>();
         Users user = usersRepository.findByUsername(username);
         if (user == null) {
-            throw new RuntimeException("Пользователь не найден: " + username);
+            throw new RuntimeException("User not found: " + username);
         }
         String userid = String.valueOf(user.getId());
+        String folderPath = "user-" + userid + "-files" + "/";
 
         try {
             Iterable<Result<Item>> results = minioClient.listObjects(
                     ListObjectsArgs.builder()
                             .bucket(miniConfig.getBucket())
-                            .prefix(userid + "/")
+                            .prefix(folderPath+path)
                             .delimiter("/")
                             .recursive(false)
                             .build()
@@ -101,11 +104,9 @@ public class MinioService {
         return minIODTOList;
     }
 
-    public MinIODTO createFolder(String folderName) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName();
-        String userid = String.valueOf(usersRepository.findByUsername(username));
-        String folderPath = "user-" + userid + "files" + "/" + folderName;
+    public MinIODTO createFolder(String folderName, String username) {
+        Users user = usersRepository.findByUsername(username);
+        String folderPath = "user-" + user.getId() + "-files" + "/" + folderName;
         try {
             minioClient.putObject(
                     PutObjectArgs.builder()
@@ -114,7 +115,7 @@ public class MinioService {
                             .stream(new ByteArrayInputStream(new byte[0]), 0, -1)
                             .build()
             );
-            log.info("Папка создана: " + folderPath);
+            log.info("Folder created: " + folderPath);
             MinIODTO minIODTO = new MinIODTO(folderPath, folderName, "DIRECTORY");
             return minIODTO;
         } catch (MinioException e) {
@@ -123,6 +124,34 @@ public class MinioService {
             log.error("Ошибка: " + e.getMessage());
         }
 
+        return null;
+    }
+
+
+    public MinIODTO uploadFile(MultipartFile file){
+        try {
+            boolean found = minioClient.bucketExists(BucketExistsArgs.builder().bucket(miniConfig.getBucket()).build());
+
+            if (!found) {
+                minioClient.makeBucket(MakeBucketArgs.builder().bucket(miniConfig.getBucket()).build());
+            }
+            String objectName=file.getOriginalFilename();
+            minioClient.putObject(
+                    PutObjectArgs.builder()
+                            .bucket(miniConfig.getBucket())
+                            .object(objectName)
+                            .stream(file.getInputStream(),file.getSize(),-1)
+                            .contentType(file.getContentType())
+                            .build()
+            );
+
+            return new MinIODTO(objectName, objectName, (byte) file.getSize(), "FILE");
+        } catch (MinioException e) {
+            log.error("Error occurred: " + e);
+            log.error("HTTP trace: " + e.httpTrace());
+        } catch (Exception e) {
+            log.error("Ошибка: " + e.getMessage());
+        }
         return null;
     }
 
