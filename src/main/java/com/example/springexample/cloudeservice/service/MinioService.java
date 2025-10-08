@@ -18,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 import redis.clients.jedis.resps.StreamGroupInfo;
 
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -176,6 +177,62 @@ public class MinioService {
             log.error("Ошибка: " + e.getMessage());
             throw new RuntimeException("Ошибка при загрузке файла");
         }
+    }
+
+    public List<MinIODTO> searchFile(String query, String username) {
+        List<MinIODTO> minIODTOList = new ArrayList<>();
+        Users users = usersRepository.findByUsername(username);
+        String userid = String.valueOf(users.getId());
+
+        String userFolder = "user-" + userid + "-files/";
+        try {
+
+            Iterable<Result<Item>> results = minioClient.listObjects(
+                    ListObjectsArgs.builder()
+                            .bucket(miniConfig.getBucket())
+                            .prefix(userFolder + query)
+                            .recursive(true)
+                            .build()
+            );
+
+            for (Result<Item> result : results) {
+                Item item = result.get();
+
+                if (item.isDir()) {
+                    String foldePath = item.objectName();
+                    String folderName = extractNameFromPath(foldePath);
+                    minIODTOList.add(new MinIODTO(extractPathWithoutName(foldePath, userid), folderName, "DIRECTORY"));
+                } else {
+                    String foldePath = item.objectName();
+                    String fileName = extractNameFromPath(foldePath);
+                    minIODTOList.add(new MinIODTO(extractPathWithoutName(foldePath, userid), fileName, (byte) item.size(), "FILE"));
+                }
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Ошибка при получении списка файлов", e);
+        }
+
+        return minIODTOList;
+    }
+
+    public InputStream downloadResource(String path, String username) {
+        try {
+            Users user = usersRepository.findByUsername(username);
+//            String folderPath = "user-" + user.getId() + "-files/" + path;
+
+            InputStream stream = minioClient.getObject(
+                    GetObjectArgs.builder()
+                            .bucket(miniConfig.getBucket())
+                            .object(path)
+                            .build());
+
+            return stream;
+
+        } catch (Exception e) {
+            throw new RuntimeException("Ошибка при загрузке файла: " + e.getMessage(), e);
+        }
+
     }
 
 
