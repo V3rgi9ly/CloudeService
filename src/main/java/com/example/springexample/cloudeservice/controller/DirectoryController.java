@@ -4,11 +4,9 @@ package com.example.springexample.cloudeservice.controller;
 import com.example.springexample.cloudeservice.service.MinioService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,13 +20,13 @@ public class DirectoryController {
     private final MinioService minioService;
 
     @GetMapping
-    public ResponseEntity<?> getDirectory(@AuthenticationPrincipal UserDetails userDetails, @RequestParam String path) {
-        return ResponseEntity.ok(minioService.getDirectory(path, userDetails.getUsername()));
+    public ResponseEntity<?> getDirectory(@AuthenticationPrincipal UserDetails userDetails, @RequestParam("path") String path) {
+        return ResponseEntity.status(HttpStatus.OK).body(minioService.getDirectory(path, userDetails.getUsername()));
     }
 
     @PostMapping()
-    public ResponseEntity<?> createDirectory(@AuthenticationPrincipal UserDetails userDetails, @RequestParam String path) {
+    public ResponseEntity<?> createDirectory(@AuthenticationPrincipal UserDetails userDetails, @RequestParam("path") String path) {
         log.info(path);
-        return ResponseEntity.ok(minioService.createFolder(path, userDetails.getUsername()));
+        return ResponseEntity.status(HttpStatus.CREATED).body(minioService.createFolder(path, userDetails.getUsername()));
     }
 }
