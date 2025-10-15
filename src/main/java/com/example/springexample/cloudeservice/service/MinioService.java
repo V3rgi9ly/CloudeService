@@ -12,10 +12,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 @Slf4j
 @Service
@@ -95,8 +99,6 @@ public class MinioService {
         } catch (Exception e) {
             throw new RuntimeException("dsfdsff" + e.getMessage());
         }
-
-
     }
 
     public List<MinIODTO> getDirectory(String pathRaw, String username) {
@@ -106,7 +108,6 @@ public class MinioService {
         if (user == null) throw new RuntimeException("User not found");
 
         String userPrefix = "user-" + user.getId() + "-files/";
-//        String rel = normalizeRelativePath(pathRaw); // ends with '/' or "" for root
         String prefix = userPrefix + (pathRaw == null ? "" : pathRaw);
 
         log.info("getDirectory -> requested pathRaw='{}', prefix='{}'", pathRaw, prefix);
@@ -115,7 +116,6 @@ public class MinioService {
                 ListObjectsArgs.builder()
                         .bucket(miniConfig.getBucket())
                         .prefix(prefix)
-//                        .delimiter("/")
                         .recursive(false)
                         .build()
         );
@@ -158,7 +158,6 @@ public class MinioService {
         }
 
         String cleanName = folderName.replaceAll("^/+", "").replaceAll("/+$", "");
-
         String folderPath = "user-" + userId + "-files/" + cleanName + "/.keep";
 
         try {
@@ -191,7 +190,7 @@ public class MinioService {
             minioClient.putObject(
                     PutObjectArgs.builder()
                             .bucket(miniConfig.getBucket())
-                            .object(folderPath + objectName)
+                            .object(folderPath +path+ objectName)
                             .stream(file.getInputStream(), file.getSize(), -1)
                             .contentType(file.getContentType())
                             .build()
@@ -209,14 +208,12 @@ public class MinioService {
     public void deleteResource(String path, String username) {
         Users user = usersRepository.findByUsername(username);
         try {
-
             String folderPath = "user-" + user.getId() + "-files" + "/";
-//            String objectKey = folderPath + path;
 
             Iterable<Result<Item>> results = minioClient.listObjects(
                     ListObjectsArgs.builder()
                             .bucket(miniConfig.getBucket())
-                            .prefix(folderPath+path)
+                            .prefix(folderPath + path)
                             .delimiter("/")
                             .build()
             );
@@ -277,14 +274,57 @@ public class MinioService {
     public InputStream downloadResource(String path, String username) {
         try {
             Users user = usersRepository.findByUsername(username);
+            String folderPath = "user-" + user.getId() + "-files" + "/";
 
-            InputStream stream = minioClient.getObject(
-                    GetObjectArgs.builder()
-                            .bucket(miniConfig.getBucket())
-                            .object(path)
-                            .build());
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ZipOutputStream zipOut = new ZipOutputStream(baos);
 
-            return stream;
+            if (path.endsWith("/")){
+
+                Iterable<Result<Item>> results = minioClient.listObjects(
+                        ListObjectsArgs.builder()
+                                .bucket(miniConfig.getBucket())
+                                .prefix(folderPath + path)
+                                .recursive(true)
+                                .build()
+                );
+
+                for (Result<Item> result : results) {
+                    Item item = result.get();
+                    String objectName = item.objectName();
+
+                    if (objectName.endsWith("/") || objectName.endsWith(".keep"))
+                        continue;
+
+                    String relativeName = objectName.substring(folderPath.length());
+
+                    try (InputStream is = minioClient.getObject(
+                            GetObjectArgs.builder()
+                                    .bucket(miniConfig.getBucket())
+                                    .object(objectName)
+                                    .build());
+                         BufferedInputStream bis = new BufferedInputStream(is)){
+                        ZipEntry entry = new ZipEntry(relativeName);
+                        zipOut.putNextEntry(entry);
+
+                        bis.transferTo(zipOut);
+                        zipOut.closeEntry();
+                    }
+                }
+                zipOut.finish();
+                zipOut.close();
+
+                return new ByteArrayInputStream(baos.toByteArray());
+
+            }else {
+                InputStream stream = minioClient.getObject(
+                        GetObjectArgs.builder()
+                                .bucket(miniConfig.getBucket())
+                                .object(folderPath+path)
+                                .build());
+
+                return stream;
+            }
 
         } catch (Exception e) {
             throw new RuntimeException("Ошибка при загрузке файла: " + e.getMessage(), e);
@@ -295,25 +335,33 @@ public class MinioService {
     public MinIODTO moveResources(String from, String to, String username) {
         Users user = usersRepository.findByUsername(username);
         String folderPath = "user-" + user.getId() + "-files" + "/";
+        MinIODTO minIODTO=null;
 
         try {
 
             if (from.endsWith("/")) {
-
                 Iterable<Result<Item>> results = minioClient.listObjects(
                         ListObjectsArgs.builder()
                                 .bucket(miniConfig.getBucket())
-                                .prefix(from)
+                                .prefix(folderPath+from)
                                 .delimiter("/")
                                 .build());
 
+                minIODTO=createFolder(to, username);
+
+
                 for (Result<Item> result : results) {
                     Item item = result.get();
-                    if (item.isDir()) {
+                    minioClient.putObject(PutObjectArgs.builder()
+                            .bucket(miniConfig.getBucket())
+                            .object(folderPath + to + extractNameFromPath(item.objectName()))
+                            .stream(new ByteArrayInputStream(new byte[0]), 0, -1)
+                            .build());
 
-                    } else {
-
-                    }
+                    minioClient.removeObject(RemoveObjectArgs.builder()
+                            .bucket(miniConfig.getBucket())
+                            .object(item.objectName())
+                            .build());
                 }
 
             } else {
@@ -323,7 +371,7 @@ public class MinioService {
                         .source(
                                 CopySource.builder()
                                         .bucket(miniConfig.getBucket())
-                                        .object(folderPath+from)
+                                        .object(folderPath + from)
                                         .build()
                         )
                         .build());
@@ -332,17 +380,16 @@ public class MinioService {
 
                 minioClient.removeObject(RemoveObjectArgs.builder()
                         .bucket(miniConfig.getBucket())
-                        .object(folderPath+from)
+                        .object(folderPath + from)
                         .build());
+
+                minIODTO=new MinIODTO(folderPath,to,"FILE");
             }
-
-            return new MinIODTO(folderPath, to, "File");
-
-        } catch (Exception e) {
+        }catch (Exception e){
             throw new RuntimeException("Ошибка при изменении ресурса" + e.getMessage(), e);
         }
 
-
+        return minIODTO;
     }
 
 
