@@ -21,8 +21,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
 
 @Slf4j
 @RestController
@@ -31,36 +29,6 @@ import java.util.List;
 public class ResourceController {
 
     private final MinioService minioService;
-    private final UsersRepository usersRepository;
-    private final MinioClient minioClient;
-    private final MiniConfig miniConfig;
-
-
-    @GetMapping("/debug/list-all")
-    public ResponseEntity<?> debugListAll(@AuthenticationPrincipal UserDetails userDetails) {
-        Users user = usersRepository.findByUsername(userDetails.getUsername());
-        String userPrefix = "user-" + user.getId() + "-files/";
-        List<String> objects = new ArrayList<>();
-
-        try {
-            Iterable<Result<Item>> results = minioClient.listObjects(
-                    ListObjectsArgs.builder()
-                            .bucket(miniConfig.getBucket())
-                            .prefix(userPrefix)
-                            .recursive(true)
-                            .build()
-            );
-
-            for (Result<Item> r : results) {
-                objects.add(r.get().objectName());
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Ошибка при получении списка", e);
-        }
-
-        log.info("Objects in MinIO:\n{}", String.join("\n", objects));
-        return ResponseEntity.ok(objects);
-    }
 
     @GetMapping
     public ResponseEntity<?> getResources(@RequestParam("path") String path,
@@ -96,8 +64,6 @@ public class ResourceController {
     public ResponseEntity<?> downloadResource(@RequestParam("path") String path,
                                               @AuthenticationPrincipal UserDetails userDetails) {
         InputStream downloadFile=minioService.downloadResource(path, userDetails.getUsername());
-//        ByteArrayResource resource = new ByteArrayResource(downloadFile);
-
 
         return ResponseEntity.ok().contentType(MediaType.APPLICATION_OCTET_STREAM).body(new InputStreamResource(downloadFile));
 

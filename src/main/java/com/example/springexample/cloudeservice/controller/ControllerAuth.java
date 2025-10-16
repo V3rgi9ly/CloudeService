@@ -6,7 +6,6 @@ import com.example.springexample.cloudeservice.service.CustomUserDetailsService;
 import com.example.springexample.cloudeservice.service.MinioService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,7 +13,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -35,7 +33,6 @@ public class ControllerAuth {
         UsernamePasswordAuthenticationToken authToken =
                 new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 
-        // сохраняем аутентификацию
         SecurityContextHolder.getContext().setAuthentication(authToken);
         request.getSession().setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
                 SecurityContextHolder.getContext());
@@ -45,11 +42,11 @@ public class ControllerAuth {
 
     @PostMapping("/sign-up")
     public ResponseEntity<?> signUp(@RequestBody UsersSignUpDto usersSignUp, HttpServletRequest request) {
-        var user=authService.signUp(usersSignUp);
+        var user = authService.signUp(usersSignUp);
 
         UserDetails userDetails = org.springframework.security.core.userdetails.User
                 .withUsername(user.username())
-                .password(usersSignUp.password()) // можно временно взять из DTO
+                .password(usersSignUp.password())
                 .roles("USER")
                 .build();
 

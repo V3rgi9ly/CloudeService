@@ -26,7 +26,6 @@ public class DirectoryController {
 
     @PostMapping()
     public ResponseEntity<?> createDirectory(@AuthenticationPrincipal UserDetails userDetails, @RequestParam("path") String path) {
-        log.info(path);
         return ResponseEntity.status(HttpStatus.CREATED).body(minioService.createFolder(path, userDetails.getUsername()));
     }
 }

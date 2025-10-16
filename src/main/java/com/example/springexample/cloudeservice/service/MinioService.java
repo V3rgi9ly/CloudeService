@@ -2,6 +2,7 @@ package com.example.springexample.cloudeservice.service;
 
 import com.example.springexample.cloudeservice.config.MiniConfig;
 import com.example.springexample.cloudeservice.dto.MinIODTO;
+import com.example.springexample.cloudeservice.exception.exceptionClass.NoUserException;
 import com.example.springexample.cloudeservice.model.Users;
 import com.example.springexample.cloudeservice.repository.UsersRepository;
 import io.minio.*;
@@ -40,11 +41,11 @@ public class MinioService {
                     .stream(new ByteArrayInputStream(new byte[]{}), 0, -1)
                     .build());
 
-            log.info("Директория челика" + userId + "создана");
+            log.info("Directory user" + userId + "created");
         } catch (MinioException e) {
-            log.error("Ошибка MinIO: " + e.getMessage());
+            log.error("Error MinIO: " + e.getMessage());
         } catch (Exception e) {
-            log.error("Ошибка: " + e.getMessage());
+            log.error("Error: " + e.getMessage());
         }
 
     }
@@ -63,7 +64,7 @@ public class MinioService {
             log.error("Error occurred: " + e);
             log.error("HTTP trace: " + e.httpTrace());
         } catch (Exception e) {
-            log.error("Ошибка: " + e.getMessage());
+            log.error("Error: " + e.getMessage());
         }
     }
 
@@ -81,9 +82,10 @@ public class MinioService {
                                 .object(folderPath)
                                 .build()
                 );
+
                 log.info(getObjectResponse.toString());
 
-                return new MinIODTO(folderPath, folderPath, "DIRECTORY");
+                return new MinIODTO(extractPathWithoutName(folderPath, userid), extractNameFromPath(folderPath), "DIRECTORY");
             } else {
                 GetObjectResponse getObjectResponse = minioClient.getObject(
                         GetObjectArgs.builder()
@@ -97,7 +99,7 @@ public class MinioService {
 
 
         } catch (Exception e) {
-            throw new RuntimeException("dsfdsff" + e.getMessage());
+            throw new RuntimeException("Error" + e.getMessage());
         }
     }
 
@@ -105,12 +107,10 @@ public class MinioService {
 
         List<MinIODTO> out = new ArrayList<>();
         Users user = usersRepository.findByUsername(username);
-        if (user == null) throw new RuntimeException("User not found");
+        if (user == null) throw new NoUserException("User not found");
 
         String userPrefix = "user-" + user.getId() + "-files/";
         String prefix = userPrefix + (pathRaw == null ? "" : pathRaw);
-
-        log.info("getDirectory -> requested pathRaw='{}', prefix='{}'", pathRaw, prefix);
 
         Iterable<Result<Item>> results = minioClient.listObjects(
                 ListObjectsArgs.builder()
@@ -136,7 +136,7 @@ public class MinioService {
                     String folderName = name.isEmpty() ? parts[parts.length - 2] : name;
                     out.add(new MinIODTO(pathRaw, folderName + "/", "DIRECTORY"));
                 } else {
-                    if (!name.equals(".keep")) { // не отображаем технический файл
+                    if (!name.equals(".keep")) {
                         out.add(new MinIODTO(pathRaw, name, (byte) item.size(), "FILE"));
                     }
                 }
@@ -171,7 +171,7 @@ public class MinioService {
             log.info("Folder created: {}", folderPath);
             return new MinIODTO("user-" + userId + "-files/", cleanName, "DIRECTORY");
         } catch (Exception e) {
-            throw new RuntimeException("Ошибка при создании папки: " + e.getMessage(), e);
+            throw new RuntimeException("Error create folder: " + e.getMessage());
         }
     }
 
@@ -190,7 +190,7 @@ public class MinioService {
             minioClient.putObject(
                     PutObjectArgs.builder()
                             .bucket(miniConfig.getBucket())
-                            .object(folderPath +path+ objectName)
+                            .object(folderPath + path + objectName)
                             .stream(file.getInputStream(), file.getSize(), -1)
                             .contentType(file.getContentType())
                             .build()
@@ -200,8 +200,7 @@ public class MinioService {
             return new MinIODTO(folderPath, objectName, (byte) file.getSize(), "FILE");
 
         } catch (Exception e) {
-            log.error("Ошибка: " + e.getMessage());
-            throw new RuntimeException("Ошибка при загрузке файла");
+            throw new RuntimeException("Error upload file"+e.getMessage());
         }
     }
 
@@ -230,7 +229,7 @@ public class MinioService {
             log.info("Resource deleted");
         } catch (Exception e) {
             log.error("Error: " + e.getMessage());
-            throw new RuntimeException("Ошибка при загрузке файла");
+            throw new RuntimeException("Error delete resource");
         }
     }
 
@@ -265,21 +264,22 @@ public class MinioService {
             }
 
         } catch (Exception e) {
-            throw new RuntimeException("Ошибка при получении списка файлов", e);
+            throw new RuntimeException("Error get file", e);
         }
 
         return minIODTOList;
     }
 
     public InputStream downloadResource(String path, String username) {
+
+        Users user = usersRepository.findByUsername(username);
+        String folderPath = "user-" + user.getId() + "-files" + "/";
         try {
-            Users user = usersRepository.findByUsername(username);
-            String folderPath = "user-" + user.getId() + "-files" + "/";
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ZipOutputStream zipOut = new ZipOutputStream(baos);
 
-            if (path.endsWith("/")){
+            if (path.endsWith("/")) {
 
                 Iterable<Result<Item>> results = minioClient.listObjects(
                         ListObjectsArgs.builder()
@@ -293,8 +293,8 @@ public class MinioService {
                     Item item = result.get();
                     String objectName = item.objectName();
 
-                    if (objectName.endsWith("/") || objectName.endsWith(".keep"))
-                        continue;
+//                    if (objectName.endsWith("/") || objectName.endsWith(".keep"))
+//                        continue;
 
                     String relativeName = objectName.substring(folderPath.length());
 
@@ -303,7 +303,7 @@ public class MinioService {
                                     .bucket(miniConfig.getBucket())
                                     .object(objectName)
                                     .build());
-                         BufferedInputStream bis = new BufferedInputStream(is)){
+                         BufferedInputStream bis = new BufferedInputStream(is)) {
                         ZipEntry entry = new ZipEntry(relativeName);
                         zipOut.putNextEntry(entry);
 
@@ -316,18 +316,18 @@ public class MinioService {
 
                 return new ByteArrayInputStream(baos.toByteArray());
 
-            }else {
+            } else {
                 InputStream stream = minioClient.getObject(
                         GetObjectArgs.builder()
                                 .bucket(miniConfig.getBucket())
-                                .object(folderPath+path)
+                                .object(folderPath + path)
                                 .build());
 
                 return stream;
             }
 
         } catch (Exception e) {
-            throw new RuntimeException("Ошибка при загрузке файла: " + e.getMessage(), e);
+            throw new RuntimeException("Error download resource: " + e.getMessage(), e);
         }
 
     }
@@ -335,7 +335,7 @@ public class MinioService {
     public MinIODTO moveResources(String from, String to, String username) {
         Users user = usersRepository.findByUsername(username);
         String folderPath = "user-" + user.getId() + "-files" + "/";
-        MinIODTO minIODTO=null;
+        MinIODTO minIODTO = null;
 
         try {
 
@@ -343,11 +343,11 @@ public class MinioService {
                 Iterable<Result<Item>> results = minioClient.listObjects(
                         ListObjectsArgs.builder()
                                 .bucket(miniConfig.getBucket())
-                                .prefix(folderPath+from)
+                                .prefix(folderPath + from)
                                 .delimiter("/")
                                 .build());
 
-                minIODTO=createFolder(to, username);
+                minIODTO = createFolder(to, username);
 
 
                 for (Result<Item> result : results) {
@@ -383,10 +383,10 @@ public class MinioService {
                         .object(folderPath + from)
                         .build());
 
-                minIODTO=new MinIODTO(folderPath,to,"FILE");
+                minIODTO = new MinIODTO(folderPath, to, "FILE");
             }
-        }catch (Exception e){
-            throw new RuntimeException("Ошибка при изменении ресурса" + e.getMessage(), e);
+        } catch (Exception e) {
+            throw new RuntimeException("Error move resources" + e.getMessage(), e);
         }
 
         return minIODTO;
