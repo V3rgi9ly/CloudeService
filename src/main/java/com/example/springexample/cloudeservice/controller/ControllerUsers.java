@@ -5,6 +5,8 @@ import com.example.springexample.cloudeservice.dto.UsersDTO;
 import com.example.springexample.cloudeservice.dto.UsersSignUpDto;
 import com.example.springexample.cloudeservice.model.Users;
 import com.example.springexample.cloudeservice.service.AuthService;
+import io.swagger.v3.oas.annotations.Hidden;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -21,6 +23,8 @@ public class ControllerUsers {
 
     private final AuthService authService;
 
+    @Hidden
+    @Tag(name = "Контроллер получения текущего пользователя", description = "Позволяет получать данные логина по текущему пользователю на сайте")
     @GetMapping("/me")
     public ResponseEntity<?> getUser(@AuthenticationPrincipal UserDetails userDetails){
         return ResponseEntity.ok(authService.getCurrenciesUser(new UsersDTO(userDetails.getUsername())));

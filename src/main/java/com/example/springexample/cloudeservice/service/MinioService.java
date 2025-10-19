@@ -228,7 +228,6 @@ public class MinioService {
 
             log.info("Resource deleted");
         } catch (Exception e) {
-            log.error("Error: " + e.getMessage());
             throw new RuntimeException("Error delete resource");
         }
     }

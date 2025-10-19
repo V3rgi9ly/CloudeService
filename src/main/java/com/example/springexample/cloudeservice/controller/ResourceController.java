@@ -9,6 +9,7 @@ import io.minio.ListObjectsArgs;
 import io.minio.MinioClient;
 import io.minio.Result;
 import io.minio.messages.Item;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamResource;
@@ -30,12 +31,16 @@ public class ResourceController {
 
     private final MinioService minioService;
 
+
+    @Tag(name = "Контроллер для получения ресурса на сайте", description = "Позволяет получить информацию о ресурсе системе")
     @GetMapping
     public ResponseEntity<?> getResources(@RequestParam("path") String path,
                                           @AuthenticationPrincipal UserDetails userDetails){
         return ResponseEntity.ok(minioService.getResources(path, userDetails.getUsername()));
     }
 
+
+    @Tag(name = "Контроллер для удаления ресурса пользователя", description = "Позволяет удалить ресурс на авторизированном сайте пользователя")
     @DeleteMapping
     public ResponseEntity<?> deleteResource(@RequestParam("path") String path,
                                             @AuthenticationPrincipal UserDetails userDetails) {
@@ -44,7 +49,7 @@ public class ResourceController {
         return ResponseEntity.noContent().build();
     }
 
-
+    @Tag(name = "Контроллер для загрузки ресурсов", description = "Позволяет загрузить ресурс на авторизированном сайте пользователя")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> uploadResource(@RequestParam("object") MultipartFile file,
                                             @RequestParam String path,
@@ -54,12 +59,16 @@ public class ResourceController {
                 .body(minioService.uploadFile(file, path, userDetails.getUsername()));
     }
 
+
+    @Tag(name = "Контроллер для поиска ресурсов", description = "Позволяет искать ресурс на авторизированном сайте пользователя")
     @GetMapping("/search")
     public ResponseEntity<?> searchResource(@RequestParam("query") String query,
                                             @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(minioService.searchFile(query, userDetails.getUsername()));
     }
 
+
+    @Tag(name = "Контроллер для скачивания ресурсов", description = "Позволяет скачать ресурс с авторизированного пользователя")
     @GetMapping("/download")
     public ResponseEntity<?> downloadResource(@RequestParam("path") String path,
                                               @AuthenticationPrincipal UserDetails userDetails) {
@@ -69,6 +78,7 @@ public class ResourceController {
 
     }
 
+    @Tag(name = "Контроллер для изменение названия/перемещения ресурса", description = "Позволяет изменить название или же переместить ресурс на авторизированном сайте пользователя")
     @GetMapping("/move")
     public ResponseEntity<?> moveResources(@RequestParam("from") String from,
                                            @RequestParam("to")String to,

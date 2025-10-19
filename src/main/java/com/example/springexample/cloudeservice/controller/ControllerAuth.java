@@ -4,6 +4,7 @@ import com.example.springexample.cloudeservice.dto.UsersSignUpDto;
 import com.example.springexample.cloudeservice.service.AuthService;
 import com.example.springexample.cloudeservice.service.CustomUserDetailsService;
 import com.example.springexample.cloudeservice.service.MinioService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +25,8 @@ public class ControllerAuth {
     private final AuthService authService;
     private final CustomUserDetailsService customUserDetailsService;
 
+
+    @Tag(name = "Контроллер для входа в УЗ пользователя", description = "Позволяет войти в УЗ пользователя с помощью логина и пароля")
     @PostMapping("/sign-in")
     public ResponseEntity<?> signIn(@RequestBody UsersSignUpDto usersSignIn, HttpServletRequest request) {
 
@@ -40,6 +43,7 @@ public class ControllerAuth {
         return ResponseEntity.ok(user);
     }
 
+    @Tag(name = "Контроллер для создания УЗ пользователя", description = "Позволяет новому пользователю создать УЗ и войти в систему")
     @PostMapping("/sign-up")
     public ResponseEntity<?> signUp(@RequestBody UsersSignUpDto usersSignUp, HttpServletRequest request) {
         var user = authService.signUp(usersSignUp);
