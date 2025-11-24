@@ -292,9 +292,6 @@ public class MinioService {
                     Item item = result.get();
                     String objectName = item.objectName();
 
-//                    if (objectName.endsWith("/") || objectName.endsWith(".keep"))
-//                        continue;
-
                     String relativeName = objectName.substring(folderPath.length());
 
                     try (InputStream is = minioClient.getObject(
